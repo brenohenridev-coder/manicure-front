@@ -19,6 +19,7 @@ export default function BookingPage() {
   const [professionals, setProfessionals] = useState([]);
   const [services, setServices] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
 
   const [selectedPro, setSelectedPro] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
@@ -43,9 +44,10 @@ export default function BookingPage() {
   useEffect(() => {
     if (selectedPro && selectedDate && selectedServices.length > 0) {
       setAvailableSlots([]);
+      setSlotsLoading(true);
       api.get('/api/schedule/available', {
         params: { professionalId: selectedPro, date: selectedDate, duration: totalDuration }
-      }).then(r => setAvailableSlots(r.data)).catch(() => {});
+      }).then(r => setAvailableSlots(r.data)).catch(() => {}).finally(() => setSlotsLoading(false));
     }
   }, [selectedPro, selectedDate, selectedServices]);
 
@@ -185,8 +187,12 @@ export default function BookingPage() {
               {selectedDate && (
                 <>
                   <p className="slots-label">Horários disponíveis</p>
-                  {availableSlots.length === 0 ? (
-                    <div className="no-slots">Carregando horários...</div>
+                  {slotsLoading ? (
+                    <div className="no-slots">Buscando horários...</div>
+                  ) : availableSlots.length === 0 ? (
+                    <div className="no-slots">😕 Nenhum horário disponível para este dia. Tente outra data!</div>
+                  ) : availableSlots.every(s => !s.available) ? (
+                    <div className="no-slots">😕 Todos os horários deste dia já estão ocupados. Tente outra data!</div>
                   ) : (
                     <div className="slots-grid">
                       {availableSlots.map(slot => (
