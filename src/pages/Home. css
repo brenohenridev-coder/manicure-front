@@ -1,0 +1,118 @@
+.home-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fff5f8 0%, var(--off-white) 60%, #fce4ec 100%);
+  padding: 20px;
+}
+
+.home-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 56px 48px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 60px var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.home-logo {
+  font-size: 44px;
+  color: var(--pink-deep);
+  margin-bottom: 16px;
+}
+
+.home-card h1 {
+  font-size: 36px;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+
+.home-sub {
+  font-size: 15px;
+  color: var(--text-light);
+  margin-bottom: 32px;
+}
+
+.home-divider {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 28px;
+}
+
+.home-question {
+  font-size: 15px;
+  color: var(--text-medium);
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.home-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+
+.home-btn-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.home-btn div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-btn strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.home-btn small {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.home-btn-client {
+  background: var(--pink-light);
+  color: var(--text-dark);
+  border-color: var(--pink-light);
+}
+
+.home-btn-client:hover {
+  background: var(--pink-deep);
+  color: white;
+  border-color: var(--pink-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--shadow-deep);
+}
+
+.home-btn-admin {
+  background: var(--off-white);
+  color: var(--text-dark);
+  border-color: var(--border);
+}
+
+.home-btn-admin:hover {
+  background: var(--text-dark);
+  color: white;
+  border-color: var(--text-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}

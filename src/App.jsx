@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { LicenseProvider, useLicense } from './context/LicenseContext';
 import { ClientAuthProvider, useClientAuth } from './context/ClientAuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import Home from './pages/Home';
 import BookingPage from './pages/BookingPage';
 import AdminLogin from './pages/AdminLogin';
 import AdminLayout from './pages/AdminLayout';
@@ -48,12 +49,17 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Página inicial com escolha */}
+        <Route path="/" element={<Home />} />
+
+        {/* Rotas de clientes */}
         <Route path="/login" element={<ClientLogin />} />
         <Route path="/cadastro" element={<ClientRegister />} />
         <Route path="/minha-conta" element={<ClientRoute><ClientPortal /></ClientRoute>} />
         <Route path="/agendar" element={<ClientRoute><BookingPage /></ClientRoute>} />
         <Route path="/agendamento/sucesso" element={<ClientRoute><BookingSuccess /></ClientRoute>} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Rotas admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
           <Route index element={<AdminDashboard />} />
