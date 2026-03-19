@@ -1,0 +1,43 @@
+.cl-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fff5f8 0%, #fafafa 60%, #fce4ec 100%);
+  padding: 20px;
+}
+.cl-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 48px 40px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 8px 60px rgba(244,143,177,0.13);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.cl-logo { font-size: 40px; color: var(--pink-deep); margin-bottom: 16px; }
+.cl-card h1 { font-size: 28px; color: var(--text-dark); margin-bottom: 8px; }
+.cl-sub { color: var(--text-light); font-size: 15px; margin-bottom: 28px; }
+.cl-error {
+  background: #ffeef0; border: 1px solid #ffcdd2; color: #c62828;
+  padding: 10px 14px; border-radius: var(--radius-sm); font-size: 14px;
+  margin-bottom: 20px; text-align: left;
+}
+.cl-form { display: flex; flex-direction: column; gap: 16px; text-align: left; }
+.cl-field label { display: block; font-size: 13px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
+.cl-field input {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 15px; font-family: inherit;
+  transition: border-color 0.2s; box-sizing: border-box;
+}
+.cl-field input:focus { outline: none; border-color: var(--pink-deep); }
+.cl-btn {
+  background: var(--pink-deep); color: white; border: none;
+  padding: 13px; border-radius: var(--radius-sm); font-size: 15px;
+  font-weight: 600; cursor: pointer; transition: opacity 0.2s; margin-top: 4px;
+}
+.cl-btn:hover { opacity: 0.88; }
+.cl-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.cl-link { margin-top: 20px; font-size: 14px; color: var(--text-light); }
+.cl-link a { color: var(--pink-deep); font-weight: 600; text-decoration: none; }

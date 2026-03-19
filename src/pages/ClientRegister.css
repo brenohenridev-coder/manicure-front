@@ -1,0 +1,8 @@
+.cr-wide { max-width: 560px !important; }
+.cr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 500px) { .cr-grid { grid-template-columns: 1fr; } }
+.cr-divider {
+  font-size: 12px; font-weight: 700; color: var(--text-light);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  border-top: 1px solid var(--border); padding-top: 16px; margin-top: 4px;
+}

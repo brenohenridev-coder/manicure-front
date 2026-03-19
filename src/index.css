@@ -22,11 +22,24 @@
   --radius-sm: 10px;
   --radius-full: 999px;
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-serif: 'Cormorant Garamond', serif;
 }
 
-html {
-  scroll-behavior: smooth;
+/* MODO NOTURNO */
+body.dark {
+  --pink-deep: #F48FB1;
+  --pink-light: #3D2030;
+  --white: #1E1E2E;
+  --off-white: #181825;
+  --text-dark: #F0E6EC;
+  --text-medium: #CBA8B8;
+  --text-light: #9B7A8A;
+  --border: #3A2535;
+  --shadow: rgba(0, 0, 0, 0.4);
+  --shadow-deep: rgba(0, 0, 0, 0.6);
 }
+
+html { scroll-behavior: smooth; }
 
 body {
   font-family: 'DM Sans', sans-serif;
@@ -35,6 +48,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
 }
 
 h1, h2, h3, h4 {
@@ -43,14 +57,8 @@ h1, h2, h3, h4 {
   letter-spacing: -0.01em;
 }
 
-button {
-  cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-}
-
-input, select, textarea {
-  font-family: 'DM Sans', sans-serif;
-}
+button { cursor: pointer; font-family: 'DM Sans', sans-serif; }
+input, select, textarea { font-family: 'DM Sans', sans-serif; }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
@@ -62,25 +70,19 @@ input, select, textarea {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(-20px); }
   to { opacity: 1; transform: translateX(0); }
 }
-
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
 }
-
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .animate-fade { animation: fadeIn 0.5s ease both; }
 .animate-slide { animation: slideIn 0.4s ease both; }
@@ -92,6 +94,28 @@ input, select, textarea {
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-sm);
 }
+
+/* Dark mode toggle button */
+.dark-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--white);
+  box-shadow: 0 4px 20px var(--shadow-deep);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 9999;
+  transition: transform 0.2s, background 0.3s;
+  border: 1.5px solid var(--border);
+}
+.dark-toggle:hover { transform: scale(1.1); }
 
 /* Utility */
 .sr-only {

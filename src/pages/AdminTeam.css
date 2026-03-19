@@ -244,3 +244,32 @@
   cursor: pointer;
   transition: var(--transition);
 }
+
+.team-card-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.delete-btn {
+  background: #fce4ec; color: #c62828; border: none;
+  padding: 6px 10px; border-radius: var(--radius-sm); font-size: 13px;
+  cursor: pointer; transition: background 0.2s;
+}
+.delete-btn:hover { background: #ffcdd2; }
+.delete-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.promote-btn {
+  background: #e8f5e9; color: #2e7d32; border: none;
+  padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px;
+  font-weight: 600; cursor: pointer; transition: background 0.2s;
+}
+.promote-btn:hover { background: #c8e6c9; }
+
+.demote-btn {
+  background: #fff3e0; color: #e65100; border: none;
+  padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px;
+  font-weight: 600; cursor: pointer; transition: background 0.2s;
+}
+.demote-btn:hover { background: #ffe0b2; }
+
+.self-badge {
+  background: var(--pink-light); color: var(--pink-deep);
+  padding: 6px 12px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 600;
+}

@@ -7,12 +7,14 @@ import './AdminTeam.css';
 const COLORS = ['#F48FB1','#F8BBD9','#CE93D8','#80CBC4','#A5D6A7','#FFE082','#FFCC80','#EF9A9A'];
 
 export default function AdminTeam() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+  const [promoting, setPromoting] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -40,6 +42,38 @@ export default function AdminTeam() {
     } catch(e) { setError('Erro ao atualizar'); }
   };
 
+  const handleRole = async (id, currentRole, name) => {
+    const newRole = currentRole === 'ADMIN' ? 'PROFESSIONAL' : 'ADMIN';
+    const msg = newRole === 'ADMIN'
+      ? `Promover "${name}" para Administradora? Ela terá acesso total ao sistema.`
+      : `Rebaixar "${name}" para Profissional? Ela perderá o acesso de administradora.`;
+    if (!confirm(msg)) return;
+    setPromoting(id);
+    setError('');
+    try {
+      const res = await api.patch(`/api/professionals/${id}/role`, { role: newRole });
+      setProfessionals(prev => prev.map(p => p.id === id ? {...p, role: res.data.role} : p));
+      setSuccess(newRole === 'ADMIN' ? `${name} agora é Administradora 👑` : `${name} agora é Profissional 💅`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch(e) {
+      setError(e.response?.data?.error || 'Erro ao atualizar perfil');
+    } finally { setPromoting(null); }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!confirm(`Tem certeza que deseja excluir "${name}" permanentemente? Esta ação não pode ser desfeita.`)) return;
+    setDeleting(id);
+    setError('');
+    try {
+      await api.delete(`/api/professionals/${id}`);
+      setProfessionals(prev => prev.filter(p => p.id !== id));
+      setSuccess(`${name} foi excluída com sucesso`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch(e) {
+      setError(e.response?.data?.error || 'Erro ao excluir profissional');
+    } finally { setDeleting(null); }
+  };
+
   const handleCreate = async () => {
     setError('');
     if (!form.name || !form.username || !form.password) { setError('Preencha todos os campos'); return; }
@@ -56,8 +90,60 @@ export default function AdminTeam() {
     finally { setSaving(false); }
   };
 
+  const isSelf = (id) => user?.id === id;
+
   const active = professionals.filter(p => p.active);
   const inactive = professionals.filter(p => !p.active);
+
+  const ProfCard = ({ p }) => (
+    <div className={`team-card animate-fade ${!p.active ? 'inactive' : ''}`}>
+      <div className="team-avatar" style={{ background: p.avatarColor, opacity: p.active ? 1 : 0.5 }}>
+        {p.name.charAt(0)}
+      </div>
+      <div className="team-info">
+        <span className="team-name">{p.name}</span>
+        <span className="team-email">@{p.username}</span>
+        <span className={`team-role ${p.active ? p.role : 'inactive-role'}`}>
+          {!p.active ? 'Desativada' : p.role === 'ADMIN' ? '👑 Admin' : '💅 Profissional'}
+        </span>
+      </div>
+
+      {!isSelf(p.id) && (
+        <div className="team-card-actions">
+          {/* Ativar / Desativar */}
+          <button
+            className={p.active ? 'deactivate-btn' : 'activate-btn'}
+            onClick={() => toggleActive(p.id, p.active)}>
+            {p.active ? 'Desativar' : 'Reativar'}
+          </button>
+
+          {/* Promover / Rebaixar */}
+          <button
+            className={p.role === 'ADMIN' ? 'demote-btn' : 'promote-btn'}
+            onClick={() => handleRole(p.id, p.role, p.name)}
+            disabled={promoting === p.id}
+            title={p.role === 'ADMIN' ? 'Rebaixar para Profissional' : 'Promover para Admin'}>
+            {promoting === p.id ? '...' : p.role === 'ADMIN' ? '👑 Rebaixar' : '⬆ Admin'}
+          </button>
+
+          {/* Excluir */}
+          <button
+            className="delete-btn"
+            onClick={() => handleDelete(p.id, p.name)}
+            disabled={deleting === p.id}
+            title="Excluir permanentemente">
+            {deleting === p.id ? '...' : '🗑'}
+          </button>
+        </div>
+      )}
+
+      {isSelf(p.id) && (
+        <div className="team-card-actions">
+          <span className="self-badge">Você</span>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="team animate-fade">
@@ -125,44 +211,14 @@ export default function AdminTeam() {
         <>
           <h2 className="team-section-title">Ativas ({active.length})</h2>
           <div className="team-grid">
-            {active.map(p => (
-              <div key={p.id} className="team-card animate-fade">
-                <div className="team-avatar" style={{ background: p.avatarColor }}>
-                  {p.name.charAt(0)}
-                </div>
-                <div className="team-info">
-                  <span className="team-name">{p.name}</span>
-                  <span className="team-email">@{p.username}</span>
-                  <span className={`team-role ${p.role}`}>
-                    {p.role === 'ADMIN' ? '👑 Admin' : '💅 Profissional'}
-                  </span>
-                </div>
-                <button className="deactivate-btn" onClick={() => toggleActive(p.id, p.active)}>
-                  Desativar
-                </button>
-              </div>
-            ))}
+            {active.map(p => <ProfCard key={p.id} p={p} />)}
           </div>
 
           {inactive.length > 0 && (
             <>
               <h2 className="team-section-title inactive-title">Inativas ({inactive.length})</h2>
               <div className="team-grid">
-                {inactive.map(p => (
-                  <div key={p.id} className="team-card inactive animate-fade">
-                    <div className="team-avatar" style={{ background: p.avatarColor, opacity: 0.5 }}>
-                      {p.name.charAt(0)}
-                    </div>
-                    <div className="team-info">
-                      <span className="team-name">{p.name}</span>
-                      <span className="team-email">@{p.username}</span>
-                      <span className="team-role inactive-role">Desativada</span>
-                    </div>
-                    <button className="activate-btn" onClick={() => toggleActive(p.id, p.active)}>
-                      Reativar
-                    </button>
-                  </div>
-                ))}
+                {inactive.map(p => <ProfCard key={p.id} p={p} />)}
               </div>
             </>
           )}

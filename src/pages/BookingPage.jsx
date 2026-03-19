@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useClientAuth } from '../context/ClientAuthContext';
 import './BookingPage.css';
 
 const SALON_ADDRESS = 'Rua das Flores, 123, São Paulo, SP';
 const SALON_MAPS_EMBED = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.1975!2d-46.6388!3d-23.5489!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjPCsDMyJzU2LjEiUyA0NsKwMzgnMTkuNyJX!5e0!3m2!1spt!2sbr!4v1234567890';
 
-const STEPS = ['Dados', 'Profissional', 'Serviços', 'Horário', 'Confirmar'];
+const STEPS = ['Profissional', 'Serviços', 'Horário', 'Confirmar'];
 
 export default function BookingPage() {
   const navigate = useNavigate();
+  const { client, logoutClient, getClientToken } = useClientAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,8 +20,6 @@ export default function BookingPage() {
   const [services, setServices] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
 
-  const [form, setForm] = useState({ fullName: '', cpf: '', phone: '', birthDate: '' });
-  const [clientId, setClientId] = useState(null);
   const [selectedPro, setSelectedPro] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
@@ -49,45 +49,29 @@ export default function BookingPage() {
     }
   }, [selectedPro, selectedDate, selectedServices]);
 
-  const formatCPF = (v) => v.replace(/\D/g,'').slice(0,11).replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
-  const formatPhone = (v) => v.replace(/\D/g,'').slice(0,11).replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');
-
   const goNext = async () => {
     setError('');
     if (step === 0) {
-      if (!form.fullName || !form.cpf || !form.phone || !form.birthDate) {
-        setError('Preencha todos os campos'); return;
-      }
-      setLoading(true);
-      try {
-        const res = await api.post('/api/clients', {
-          ...form,
-          cpf: form.cpf.replace(/\D/g,''),
-          phone: form.phone.replace(/\D/g,'')
-        });
-        setClientId(res.data.id);
-        setStep(1);
-      } catch(e) { setError(e.response?.data?.error || 'Erro ao cadastrar'); }
-      finally { setLoading(false); }
-    } else if (step === 1) {
       if (!selectedPro) { setError('Selecione uma profissional'); return; }
+      setStep(1);
+    } else if (step === 1) {
+      if (!selectedServices.length) { setError('Selecione pelo menos um serviço'); return; }
       setStep(2);
     } else if (step === 2) {
-      if (!selectedServices.length) { setError('Selecione pelo menos um serviço'); return; }
+      if (!selectedSlot) { setError('Selecione um horário'); return; }
       setStep(3);
     } else if (step === 3) {
-      if (!selectedSlot) { setError('Selecione um horário'); return; }
-      setStep(4);
-    } else if (step === 4) {
       setLoading(true);
       try {
+        const token = getClientToken();
         await api.post('/api/appointments', {
-          clientId,
           professionalId: selectedPro,
           date: selectedSlot,
           serviceIds: selectedServices
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        navigate('/agendamento/sucesso', { state: { name: form.fullName, slot: selectedSlot } });
+        navigate('/agendamento/sucesso', { state: { name: client?.fullName, slot: selectedSlot } });
       } catch(e) { setError(e.response?.data?.error || 'Erro ao agendar'); }
       finally { setLoading(false); }
     }
@@ -102,7 +86,6 @@ export default function BookingPage() {
 
   return (
     <div className="booking-page">
-      {/* Header */}
       <header className="booking-header">
         <div className="booking-logo">
           <span className="logo-icon">✦</span>
@@ -111,11 +94,23 @@ export default function BookingPage() {
             <p>Manicure & Nail Art</p>
           </div>
         </div>
-        <a href="/admin/login" className="admin-link">Área Profissional</a>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button onClick={() => navigate('/minha-conta')} style={{ background: 'none', border: '1.5px solid var(--pink-deep)', color: 'var(--pink-deep)', padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            Minha conta
+          </button>
+          <button onClick={() => { logoutClient(); navigate('/login'); }} style={{ background: 'none', border: 'none', color: 'var(--text-light)', fontSize: 13, cursor: 'pointer' }}>
+            Sair
+          </button>
+          <a href="/admin/login" className="admin-link">Área Profissional</a>
+        </div>
       </header>
 
+      {/* Saudação */}
+      <div style={{ background: 'var(--pink-light)', padding: '10px 24px', fontSize: 14, color: 'var(--text-dark)', borderBottom: '1px solid var(--border)' }}>
+        Olá, <strong>{client?.fullName}</strong>! Escolha seu horário 💅
+      </div>
+
       <main className="booking-main">
-        {/* Stepper */}
         <div className="stepper">
           {STEPS.map((s, i) => (
             <div key={s} className={`step ${i === step ? 'active' : i < step ? 'done' : ''}`}>
@@ -127,38 +122,8 @@ export default function BookingPage() {
         </div>
 
         <div className="booking-card animate-fade">
-          {/* STEP 0 — Personal data */}
+          {/* STEP 0 — Profissional */}
           {step === 0 && (
-            <div className="step-content">
-              <h2 className="step-title">Suas Informações</h2>
-              <p className="step-sub">Preencha seus dados para realizar o agendamento</p>
-              <div className="form-grid">
-                <div className="field full">
-                  <label>Nome completo</label>
-                  <input placeholder="Maria Aparecida Silva" value={form.fullName}
-                    onChange={e => setForm({...form, fullName: e.target.value})} />
-                </div>
-                <div className="field">
-                  <label>CPF</label>
-                  <input placeholder="000.000.000-00" value={form.cpf}
-                    onChange={e => setForm({...form, cpf: formatCPF(e.target.value)})} />
-                </div>
-                <div className="field">
-                  <label>Celular</label>
-                  <input placeholder="(11) 99999-9999" value={form.phone}
-                    onChange={e => setForm({...form, phone: formatPhone(e.target.value)})} />
-                </div>
-                <div className="field">
-                  <label>Data de nascimento</label>
-                  <input type="date" value={form.birthDate}
-                    onChange={e => setForm({...form, birthDate: e.target.value})} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 1 — Choose professional */}
-          {step === 1 && (
             <div className="step-content">
               <h2 className="step-title">Escolha sua Profissional</h2>
               <p className="step-sub">Selecione com quem você quer ser atendida</p>
@@ -177,8 +142,8 @@ export default function BookingPage() {
             </div>
           )}
 
-          {/* STEP 2 — Choose services */}
-          {step === 2 && (
+          {/* STEP 1 — Serviços */}
+          {step === 1 && (
             <div className="step-content">
               <h2 className="step-title">Selecione os Serviços</h2>
               <p className="step-sub">Você pode escolher mais de um serviço</p>
@@ -207,8 +172,8 @@ export default function BookingPage() {
             </div>
           )}
 
-          {/* STEP 3 — Pick date & time */}
-          {step === 3 && (
+          {/* STEP 2 — Horário */}
+          {step === 2 && (
             <div className="step-content">
               <h2 className="step-title">Escolha o Horário</h2>
               <p className="step-sub">Selecione a data e o melhor horário para você</p>
@@ -239,13 +204,13 @@ export default function BookingPage() {
             </div>
           )}
 
-          {/* STEP 4 — Confirm */}
-          {step === 4 && (
+          {/* STEP 3 — Confirmar */}
+          {step === 3 && (
             <div className="step-content">
               <h2 className="step-title">Confirmar Agendamento</h2>
               <p className="step-sub">Revise os detalhes antes de confirmar</p>
               <div className="confirm-card">
-                <div className="confirm-row"><span>👤 Cliente</span><strong>{form.fullName}</strong></div>
+                <div className="confirm-row"><span>👤 Cliente</span><strong>{client?.fullName}</strong></div>
                 <div className="confirm-row"><span>💅 Profissional</span><strong>{pro?.name}</strong></div>
                 <div className="confirm-row">
                   <span>🌸 Serviços</span>
@@ -264,7 +229,6 @@ export default function BookingPage() {
                 <div className="confirm-row total-row"><span>💰 Total</span><strong>R$ {totalPrice.toFixed(2)}</strong></div>
               </div>
 
-              {/* Mini Map */}
               <div className="map-section">
                 <h3>📍 Nossa localização</h3>
                 <p>{SALON_ADDRESS}</p>
@@ -290,7 +254,7 @@ export default function BookingPage() {
               </button>
             )}
             <button className="btn-next" onClick={goNext} disabled={loading}>
-              {loading ? <span className="spinner" /> : step === 4 ? '✓ Confirmar Agendamento' : 'Continuar →'}
+              {loading ? <span className="spinner" /> : step === 3 ? '✓ Confirmar Agendamento' : 'Continuar →'}
             </button>
           </div>
         </div>
