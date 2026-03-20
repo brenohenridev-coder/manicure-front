@@ -52,6 +52,12 @@ export default function ClientLogin() {
         <p className="cl-link">
           Ainda não tem conta? <Link to="/cadastro">Cadastre-se</Link>
         </p>
+
+        <div className="cl-divider" />
+
+        <p className="cl-pro-link">
+          É profissional? <Link to="/admin/login">Acesse a área profissional</Link>
+        </p>
       </div>
     </div>
   );
