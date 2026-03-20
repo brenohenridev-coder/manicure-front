@@ -58,7 +58,7 @@ export default function AdminClients() {
             <div>{[1,2,3,4].map(i => <div key={i} className="skeleton" style={{height:70,marginBottom:8}} />)}</div>
           ) : clients.length === 0 ? (
             <div className="clients-empty">
-              <span>🌸</span>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <p>{search ? 'Nenhuma cliente encontrada' : 'Nenhuma cliente cadastrada'}</p>
             </div>
           ) : (
@@ -89,7 +89,7 @@ export default function AdminClients() {
         <div className="clients-detail-panel">
           {!selected ? (
             <div className="detail-empty">
-              <span>👤</span>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <p>Selecione uma cliente para ver os detalhes</p>
             </div>
           ) : detailLoading ? (
@@ -115,7 +115,7 @@ export default function AdminClients() {
                   <strong>{new Date(detail.birthDate).toLocaleDateString('pt-BR')}</strong>
                 </div>
                 <div className="detail-info-item">
-                  <span>📅 Desde</span>
+                  <span>Desde</span>
                   <strong>{new Date(detail.createdAt).toLocaleDateString('pt-BR')}</strong>
                 </div>
               </div>

@@ -166,3 +166,5 @@ body.dark .schedule-filters input,
 body.dark .schedule-filters select { background: var(--white); border-color: var(--border); color: var(--text-dark); }
 body.dark .schedule-card { background: var(--white); border-color: var(--border); }
 body.dark .schedule-client { color: var(--text-dark); }
+
+.sched-empty svg { color: var(--border); margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto; }
