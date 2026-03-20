@@ -1,284 +1,243 @@
-.team { max-width: 800px; }
+import { useState, useEffect } from 'react';
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import './AdminTeam.css';
+import PhotoUpload from '../components/PhotoUpload';
 
-.team-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 12px;
+const COLORS = ['#F48FB1','#F8BBD9','#CE93D8','#80CBC4','#A5D6A7','#FFE082','#FFCC80','#EF9A9A'];
+
+export default function AdminTeam() {
+  const { isAdmin, user } = useAuth();
+  const navigate = useNavigate();
+  const [professionals, setProfessionals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+  const [promoting, setPromoting] = useState(null);
+  const [photoLoading, setPhotoLoading] = useState(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const [form, setForm] = useState({ name: '', username: '', password: '', role: 'PROFESSIONAL', avatarColor: '#F48FB1' });
+
+  useEffect(() => {
+    if (!isAdmin) { navigate('/admin'); return; }
+    fetchTeam();
+  }, [isAdmin]);
+
+  const uploadPhoto = async (id, base64) => {
+    setPhotoLoading(id);
+    try {
+      await api.patch(`/api/professionals/${id}/photo`, { photo: base64 });
+      setProfessionals(prev => prev.map(p => p.id === id ? {...p, photo: base64} : p));
+      setSuccess('Foto atualizada com sucesso');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch(e) {
+      setError(e.response?.data?.error || 'Erro ao salvar foto');
+    } finally {
+      setPhotoLoading(null);
+    }
+  };
+
+  const fetchTeam = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/api/professionals/all');
+      setProfessionals(res.data);
+    } catch(e) {} finally { setLoading(false); }
+  };
+
+  const toggleActive = async (id, active) => {
+    try {
+      await api.patch(`/api/professionals/${id}/toggle`);
+      setProfessionals(prev => prev.map(p => p.id === id ? {...p, active: !active} : p));
+      setSuccess(`Profissional ${active ? 'desativada' : 'ativada'} com sucesso`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch(e) { setError('Erro ao atualizar'); }
+  };
+
+  const handleRole = async (id, currentRole, name) => {
+    const newRole = currentRole === 'ADMIN' ? 'PROFESSIONAL' : 'ADMIN';
+    const msg = newRole === 'ADMIN'
+      ? `Promover "${name}" para Administradora? Ela terá acesso total ao sistema.`
+      : `Rebaixar "${name}" para Profissional? Ela perderá o acesso de administradora.`;
+    if (!confirm(msg)) return;
+    setPromoting(id);
+    setError('');
+    try {
+      const res = await api.patch(`/api/professionals/${id}/role`, { role: newRole });
+      setProfessionals(prev => prev.map(p => p.id === id ? {...p, role: res.data.role} : p));
+      setSuccess(newRole === 'ADMIN' ? `${name} agora é Administradora 👑` : `${name} agora é Profissional 💅`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch(e) {
+      setError(e.response?.data?.error || 'Erro ao atualizar perfil');
+    } finally { setPromoting(null); }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!confirm(`Tem certeza que deseja excluir "${name}" permanentemente? Esta ação não pode ser desfeita.`)) return;
+    setDeleting(id);
+    setError('');
+    try {
+      await api.delete(`/api/professionals/${id}`);
+      setProfessionals(prev => prev.filter(p => p.id !== id));
+      setSuccess(`${name} foi excluída com sucesso`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch(e) {
+      setError(e.response?.data?.error || 'Erro ao excluir profissional');
+    } finally { setDeleting(null); }
+  };
+
+  const handleCreate = async () => {
+    setError('');
+    if (!form.name || !form.username || !form.password) { setError('Preencha todos os campos'); return; }
+    if (form.password.length < 6) { setError('Senha deve ter pelo menos 6 caracteres'); return; }
+    setSaving(true);
+    try {
+      const res = await api.post('/api/professionals', form);
+      setProfessionals(prev => [...prev, res.data]);
+      setShowForm(false);
+      setForm({ name: '', username: '', password: '', role: 'PROFESSIONAL', avatarColor: '#F48FB1' });
+      setSuccess('Profissional adicionada com sucesso! 🎉');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch(e) { setError(e.response?.data?.error || 'Erro ao criar'); }
+    finally { setSaving(false); }
+  };
+
+  const isSelf = (id) => user?.id === id;
+
+  const active = professionals.filter(p => p.active);
+  const inactive = professionals.filter(p => !p.active);
+
+  const ProfCard = ({ p }) => (
+    <div className={`team-card animate-fade ${!p.active ? 'inactive' : ''}`}>
+      <PhotoUpload currentPhoto={p.photo} name={p.name} size={48} onUpload={(b64) => uploadPhoto(p.id, b64)} loading={photoLoading === p.id} />
+      <div className="team-info">
+        <span className="team-name">{p.name}</span>
+        <span className="team-email">@{p.username}</span>
+        <span className={`team-role ${p.active ? p.role : 'inactive-role'}`}>
+          {!p.active ? 'Desativada' : p.role === 'ADMIN' ? '👑 Admin' : '💅 Profissional'}
+        </span>
+      </div>
+
+      {!isSelf(p.id) && (
+        <div className="team-card-actions">
+          {/* Ativar / Desativar */}
+          <button
+            className={p.active ? 'deactivate-btn' : 'activate-btn'}
+            onClick={() => toggleActive(p.id, p.active)}>
+            {p.active ? 'Desativar' : 'Reativar'}
+          </button>
+
+          {/* Promover / Rebaixar */}
+          <button
+            className={p.role === 'ADMIN' ? 'demote-btn' : 'promote-btn'}
+            onClick={() => handleRole(p.id, p.role, p.name)}
+            disabled={promoting === p.id}
+            title={p.role === 'ADMIN' ? 'Rebaixar para Profissional' : 'Promover para Admin'}>
+            {promoting === p.id ? '...' : p.role === 'ADMIN' ? '👑 Rebaixar' : '⬆ Admin'}
+          </button>
+
+          {/* Excluir */}
+          <button
+            className="delete-btn"
+            onClick={() => handleDelete(p.id, p.name)}
+            disabled={deleting === p.id}
+            title="Excluir permanentemente">
+            {deleting === p.id ? '...' : '🗑'}
+          </button>
+        </div>
+      )}
+
+      {isSelf(p.id) && (
+        <div className="team-card-actions">
+          <span className="self-badge">Você</span>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="team animate-fade">
+      <div className="team-header">
+        <div>
+          <h1>Equipe</h1>
+          <p>Gerencie sua equipe de profissionais</p>
+        </div>
+        <button className="add-btn" onClick={() => setShowForm(!showForm)}>
+          {showForm ? '✕ Cancelar' : '+ Adicionar profissional'}
+        </button>
+      </div>
+
+      {success && <div className="success-msg">✓ {success}</div>}
+      {error && <div className="error-msg2">⚠ {error}</div>}
+
+      {showForm && (
+        <div className="add-form animate-fade">
+          <h3>Nova Profissional</h3>
+          <div className="add-form-grid">
+            <div className="add-field">
+              <label>Nome completo</label>
+              <input placeholder="Ex: Ana Paula" value={form.name}
+                onChange={e => setForm({...form, name: e.target.value})} />
+            </div>
+            <div className="add-field">
+              <label>Usuário para login</label>
+              <input placeholder="Ex: ana" value={form.username}
+                onChange={e => setForm({...form, username: e.target.value.toLowerCase()})} />
+            </div>
+            <div className="add-field">
+              <label>Senha inicial</label>
+              <input type="password" placeholder="Mínimo 6 caracteres" value={form.password}
+                onChange={e => setForm({...form, password: e.target.value})} />
+            </div>
+            <div className="add-field">
+              <label>Perfil</label>
+              <select value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
+                <option value="PROFESSIONAL">Profissional</option>
+                <option value="ADMIN">Administradora</option>
+              </select>
+            </div>
+            <div className="add-field full">
+              <label>Cor do avatar</label>
+              <div className="color-grid">
+                {COLORS.map(c => (
+                  <button key={c} className={`color-dot ${form.avatarColor === c ? 'selected' : ''}`}
+                    style={{ background: c }} onClick={() => setForm({...form, avatarColor: c})} />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="add-form-actions">
+            <button className="cancel-btn" onClick={() => setShowForm(false)}>Cancelar</button>
+            <button className="save-btn" onClick={handleCreate} disabled={saving}>
+              {saving ? <span className="spinner" /> : 'Adicionar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div>{[1,2,3].map(i => <div key={i} className="skeleton" style={{height:90,marginBottom:12}} />)}</div>
+      ) : (
+        <>
+          <h2 className="team-section-title">Ativas ({active.length})</h2>
+          <div className="team-grid">
+            {active.map(p => <ProfCard key={p.id} p={p} />)}
+          </div>
+
+          {inactive.length > 0 && (
+            <>
+              <h2 className="team-section-title inactive-title">Inativas ({inactive.length})</h2>
+              <div className="team-grid">
+                {inactive.map(p => <ProfCard key={p.id} p={p} />)}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
 }
-
-.team-header h1 { font-size: 32px; color: var(--text-dark); }
-.team-header p { font-size: 14px; color: var(--text-light); margin-top: 4px; }
-
-.add-btn {
-  padding: 12px 22px;
-  background: linear-gradient(135deg, var(--pink-deep), #e91e8c);
-  color: white;
-  border: none;
-  border-radius: var(--radius-full);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  box-shadow: 0 4px 16px var(--shadow-deep);
-}
-
-.add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--shadow-deep); }
-
-.success-msg {
-  background: #e8f5e9;
-  border: 1px solid #a5d6a7;
-  color: #2e7d32;
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  margin-bottom: 16px;
-}
-
-.error-msg2 {
-  background: #fff5f5;
-  border: 1px solid #ffcdd2;
-  color: #c62828;
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  margin-bottom: 16px;
-}
-
-/* Add form */
-.add-form {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 28px;
-  margin-bottom: 28px;
-}
-
-.add-form h3 {
-  font-size: 18px;
-  color: var(--text-dark);
-  margin-bottom: 20px;
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 600;
-}
-
-.add-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.add-field { display: flex; flex-direction: column; gap: 6px; }
-.add-field.full { grid-column: 1 / -1; }
-
-.add-field label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.add-field input,
-.add-field select {
-  padding: 12px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  color: var(--text-dark);
-  background: var(--off-white);
-  outline: none;
-  transition: var(--transition);
-}
-
-.add-field input:focus,
-.add-field select:focus {
-  border-color: var(--pink-deep);
-  background: var(--white);
-  box-shadow: 0 0 0 3px rgba(244,143,177,0.15);
-}
-
-.color-grid { display: flex; gap: 10px; flex-wrap: wrap; }
-
-.color-dot {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 3px solid transparent;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.color-dot.selected {
-  border-color: var(--text-dark);
-  transform: scale(1.15);
-}
-
-.color-dot:hover { transform: scale(1.1); }
-
-.add-form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-
-.cancel-btn {
-  padding: 11px 22px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-full);
-  background: transparent;
-  color: var(--text-medium);
-  font-size: 14px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.cancel-btn:hover { border-color: var(--text-medium); }
-
-.save-btn {
-  padding: 11px 28px;
-  background: linear-gradient(135deg, var(--pink-deep), #e91e8c);
-  color: white;
-  border: none;
-  border-radius: var(--radius-full);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 100px;
-  box-shadow: 0 4px 16px var(--shadow-deep);
-}
-
-.save-btn:disabled { opacity: 0.6; }
-
-/* Team sections */
-.team-section-title {
-  font-size: 16px;
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 600;
-  color: var(--text-dark);
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.inactive-title { color: var(--text-light); margin-top: 28px; }
-
-.team-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
-
-.team-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  transition: var(--transition);
-}
-
-.team-card:hover { box-shadow: 0 4px 20px var(--shadow); }
-.team-card.inactive { opacity: 0.65; }
-
-.team-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  font-weight: 400;
-  color: white;
-  font-family: 'Cormorant Garamond', serif;
-  flex-shrink: 0;
-}
-
-.team-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.team-name { font-size: 16px; font-weight: 600; color: var(--text-dark); }
-.team-email { font-size: 13px; color: var(--text-light); }
-
-.team-role {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 10px;
-  border-radius: var(--radius-full);
-  display: inline-block;
-  width: fit-content;
-}
-
-.team-role.ADMIN { background: #fce4ec; color: #c2185b; }
-.team-role.PROFESSIONAL { background: #fff0f6; color: var(--pink-deep); }
-.inactive-role { background: var(--off-white); color: var(--text-light); }
-
-.deactivate-btn {
-  padding: 8px 16px;
-  border: 1.5px solid #ffcdd2;
-  border-radius: var(--radius-full);
-  background: #fff5f5;
-  color: #c62828;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.deactivate-btn:hover { background: #ffebee; }
-
-.activate-btn {
-  padding: 8px 16px;
-  border: 1.5px solid #a5d6a7;
-  border-radius: var(--radius-full);
-  background: #e8f5e9;
-  color: #2e7d32;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.team-card-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
-.delete-btn {
-  background: #fce4ec; color: #c62828; border: none;
-  padding: 6px 10px; border-radius: var(--radius-sm); font-size: 13px;
-  cursor: pointer; transition: background 0.2s;
-}
-.delete-btn:hover { background: #ffcdd2; }
-.delete-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.promote-btn {
-  background: #e8f5e9; color: #2e7d32; border: none;
-  padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px;
-  font-weight: 600; cursor: pointer; transition: background 0.2s;
-}
-.promote-btn:hover { background: #c8e6c9; }
-
-.demote-btn {
-  background: #fff3e0; color: #e65100; border: none;
-  padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px;
-  font-weight: 600; cursor: pointer; transition: background 0.2s;
-}
-.demote-btn:hover { background: #ffe0b2; }
-
-.self-badge {
-  background: var(--pink-light); color: var(--pink-deep);
-  padding: 6px 12px; border-radius: var(--radius-sm);
-  font-size: 12px; font-weight: 600;
-}
-
-/* Dark mode fixes */
-body.dark .team-card { background: var(--white); border-color: var(--border); }
-body.dark .team-name { color: var(--text-dark); }
-body.dark .team-email { color: var(--text-light); }
-body.dark .add-form { background: var(--white); border-color: var(--border); }
-body.dark .add-field input,
-body.dark .add-field select { background: #2a2a3a; border-color: var(--border); color: var(--text-dark); }
-body.dark .add-field label { color: var(--text-light); }

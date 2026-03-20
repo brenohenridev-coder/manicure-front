@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useClientAuth } from '../context/ClientAuthContext';
 import api from '../services/api';
 import './ClientPortal.css';
+import PhotoUpload from '../components/PhotoUpload';
 
 const STATUS_LABEL = { SCHEDULED: 'Agendado', COMPLETED: 'Concluído', CANCELLED: 'Cancelado', NO_SHOW: 'Não compareceu' };
 const STATUS_CLASS = { SCHEDULED: 'status-scheduled', COMPLETED: 'status-done', CANCELLED: 'status-cancelled', NO_SHOW: 'status-noshow' };
@@ -18,6 +19,23 @@ export default function ClientPortal() {
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
   const [msg, setMsg] = useState('');
+  const [photoLoading, setPhotoLoading] = useState(false);
+
+  const uploadPhoto = async (base64) => {
+    setPhotoLoading(true);
+    try {
+      const token = getClientToken();
+      await api.patch('/api/client-auth/photo', { photo: base64 }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMsg('✅ Foto atualizada com sucesso');
+      setTimeout(() => setMsg(''), 3000);
+    } catch (err) {
+      setMsg('❌ ' + (err.response?.data?.error || 'Erro ao salvar foto'));
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -95,7 +113,7 @@ export default function ClientPortal() {
       <main className="cp-main">
         {/* Perfil */}
         <div className="cp-profile-card">
-          <div className="cp-avatar">{data?.fullName?.charAt(0)}</div>
+          <PhotoUpload currentPhoto={data?.photo} name={data?.fullName} size={56} onUpload={uploadPhoto} loading={photoLoading} />
           <div>
             <h2>{data?.fullName}</h2>
             <p>@{data?.username} · {data?.phone}</p>

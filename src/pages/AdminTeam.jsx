@@ -3,6 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './AdminTeam.css';
+import PhotoUpload from '../components/PhotoUpload';
 
 const COLORS = ['#F48FB1','#F8BBD9','#CE93D8','#80CBC4','#A5D6A7','#FFE082','#FFCC80','#EF9A9A'];
 
@@ -15,6 +16,7 @@ export default function AdminTeam() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [promoting, setPromoting] = useState(null);
+  const [photoLoading, setPhotoLoading] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -24,6 +26,20 @@ export default function AdminTeam() {
     if (!isAdmin) { navigate('/admin'); return; }
     fetchTeam();
   }, [isAdmin]);
+
+  const uploadPhoto = async (id, base64) => {
+    setPhotoLoading(id);
+    try {
+      await api.patch(`/api/professionals/${id}/photo`, { photo: base64 });
+      setProfessionals(prev => prev.map(p => p.id === id ? {...p, photo: base64} : p));
+      setSuccess('Foto atualizada com sucesso');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch(e) {
+      setError(e.response?.data?.error || 'Erro ao salvar foto');
+    } finally {
+      setPhotoLoading(null);
+    }
+  };
 
   const fetchTeam = async () => {
     setLoading(true);
@@ -97,9 +113,7 @@ export default function AdminTeam() {
 
   const ProfCard = ({ p }) => (
     <div className={`team-card animate-fade ${!p.active ? 'inactive' : ''}`}>
-      <div className="team-avatar" style={{ background: p.avatarColor, opacity: p.active ? 1 : 0.5 }}>
-        {p.name.charAt(0)}
-      </div>
+      <PhotoUpload currentPhoto={p.photo} name={p.name} size={48} onUpload={(b64) => uploadPhoto(p.id, b64)} loading={photoLoading === p.id} />
       <div className="team-info">
         <span className="team-name">{p.name}</span>
         <span className="team-email">@{p.username}</span>
