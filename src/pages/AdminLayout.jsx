@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './AdminLayout.css';
@@ -11,6 +12,7 @@ const NAV = [
 
 export default function AdminLayout() {
   const { user, logout, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [profilePhoto, setProfilePhoto] = useState(null);
 
   useEffect(() => {
@@ -23,7 +25,6 @@ export default function AdminLayout() {
       });
     }
   }, [user?.id]);
-  const navigate = useNavigate();
 
   const handleLogout = () => { logout(); navigate('/admin/login'); };
 
