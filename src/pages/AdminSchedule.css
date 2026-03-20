@@ -160,3 +160,9 @@
 }
 
 .sched-empty span { font-size: 48px; display: block; margin-bottom: 12px; }
+
+/* Dark mode fixes */
+body.dark .schedule-filters input,
+body.dark .schedule-filters select { background: var(--white); border-color: var(--border); color: var(--text-dark); }
+body.dark .schedule-card { background: var(--white); border-color: var(--border); }
+body.dark .schedule-client { color: var(--text-dark); }

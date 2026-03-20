@@ -273,3 +273,12 @@
   padding: 6px 12px; border-radius: var(--radius-sm);
   font-size: 12px; font-weight: 600;
 }
+
+/* Dark mode fixes */
+body.dark .team-card { background: var(--white); border-color: var(--border); }
+body.dark .team-name { color: var(--text-dark); }
+body.dark .team-email { color: var(--text-light); }
+body.dark .add-form { background: var(--white); border-color: var(--border); }
+body.dark .add-field input,
+body.dark .add-field select { background: #2a2a3a; border-color: var(--border); color: var(--text-dark); }
+body.dark .add-field label { color: var(--text-light); }

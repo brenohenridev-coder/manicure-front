@@ -215,3 +215,34 @@
   .appt-card { flex-wrap: wrap; }
   .appt-actions { flex-direction: row; width: 100%; }
 }
+
+.stat-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--off-white);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-medium);
+  flex-shrink: 0;
+}
+.stat-icon-box.green { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+.stat-icon-box.pink { background: var(--pink-light); border-color: var(--pink-deep); color: var(--pink-deep); }
+
+/* Dark mode fixes */
+body.dark .stat-card { background: var(--white); border-color: var(--border); }
+body.dark .stat-card.highlight { background: #2a1520; border-color: var(--border); }
+body.dark .stat-num { color: var(--text-dark); }
+body.dark .stat-label { color: var(--text-light); }
+body.dark .stat-icon-box { background: #2a2a3a; border-color: var(--border); color: var(--text-light); }
+body.dark .appt-card { background: var(--white); border-color: var(--border); }
+body.dark .appt-client { color: var(--text-dark); }
+body.dark .appt-services span { background: #2a2a3a; border-color: var(--border); color: var(--text-light); }
+body.dark .pay-btn { background: #2a2a3a; border-color: var(--border); color: var(--text-light); }
+body.dark .pay-btn.paid { background: #1a3a1a; border-color: #2e7d32; color: #81c784; }
+body.dark .status-select { background: #2a2a3a; border-color: var(--border); color: var(--text-light); }
+body.dark .empty-slot { background: #2a2a3a; border-color: var(--border); color: var(--text-light); }
+body.dark .refresh-btn { background: var(--white); border-color: var(--border); color: var(--text-light); }
+body.dark .badge { background: var(--pink-light); color: var(--text-dark); }

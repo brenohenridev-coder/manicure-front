@@ -245,3 +245,15 @@
   .clients-layout { grid-template-columns: 1fr; }
   .clients-page { height: auto; }
 }
+
+/* Dark mode fixes */
+body.dark .clients-list { background: var(--white); border-color: var(--border); }
+body.dark .client-item { border-color: var(--border); }
+body.dark .client-item:hover { background: #2a2a3a; }
+body.dark .client-item.selected { background: #2a1520; }
+body.dark .client-name { color: var(--text-dark); }
+body.dark .client-phone { color: var(--text-light); }
+body.dark .client-detail { background: var(--white); border-color: var(--border); }
+body.dark .detail-label { color: var(--text-light); }
+body.dark .detail-value { color: var(--text-dark); }
+body.dark .search-input { background: var(--white); border-color: var(--border); color: var(--text-dark); }
