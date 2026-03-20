@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import './AdminTeam.css';
 import PhotoUpload from '../components/PhotoUpload';
+import './AdminTeam.css';
 
 const COLORS = ['#F48FB1','#F8BBD9','#CE93D8','#80CBC4','#A5D6A7','#FFE082','#FFCC80','#EF9A9A'];
 
@@ -20,26 +20,13 @@ export default function AdminTeam() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const [form, setForm] = useState({ name: '', username: '', password: '', role: 'PROFESSIONAL', avatarColor: '#F48FB1' });
+  const emptyForm = { name: '', username: '', password: '', role: 'PROFESSIONAL', avatarColor: '#F48FB1', photo: null };
+  const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
     if (!isAdmin) { navigate('/admin'); return; }
     fetchTeam();
   }, [isAdmin]);
-
-  const uploadPhoto = async (id, base64) => {
-    setPhotoLoading(id);
-    try {
-      await api.patch(`/api/professionals/${id}/photo`, { photo: base64 });
-      setProfessionals(prev => prev.map(p => p.id === id ? {...p, photo: base64} : p));
-      setSuccess('Foto atualizada com sucesso');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch(e) {
-      setError(e.response?.data?.error || 'Erro ao salvar foto');
-    } finally {
-      setPhotoLoading(null);
-    }
-  };
 
   const fetchTeam = async () => {
     setLoading(true);
@@ -61,15 +48,15 @@ export default function AdminTeam() {
   const handleRole = async (id, currentRole, name) => {
     const newRole = currentRole === 'ADMIN' ? 'PROFESSIONAL' : 'ADMIN';
     const msg = newRole === 'ADMIN'
-      ? `Promover "${name}" para Administradora? Ela terá acesso total ao sistema.`
-      : `Rebaixar "${name}" para Profissional? Ela perderá o acesso de administradora.`;
+      ? `Promover "${name}" para Administradora?`
+      : `Rebaixar "${name}" para Profissional?`;
     if (!confirm(msg)) return;
     setPromoting(id);
     setError('');
     try {
       const res = await api.patch(`/api/professionals/${id}/role`, { role: newRole });
       setProfessionals(prev => prev.map(p => p.id === id ? {...p, role: res.data.role} : p));
-      setSuccess(newRole === 'ADMIN' ? `${name} agora é Administradora 👑` : `${name} agora é Profissional 💅`);
+      setSuccess(newRole === 'ADMIN' ? `${name} agora é Administradora` : `${name} agora é Profissional`);
       setTimeout(() => setSuccess(''), 3000);
     } catch(e) {
       setError(e.response?.data?.error || 'Erro ao atualizar perfil');
@@ -77,7 +64,7 @@ export default function AdminTeam() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!confirm(`Tem certeza que deseja excluir "${name}" permanentemente? Esta ação não pode ser desfeita.`)) return;
+    if (!confirm(`Tem certeza que deseja excluir "${name}" permanentemente?`)) return;
     setDeleting(id);
     setError('');
     try {
@@ -90,24 +77,45 @@ export default function AdminTeam() {
     } finally { setDeleting(null); }
   };
 
+  const uploadPhoto = async (id, base64) => {
+    setPhotoLoading(id);
+    try {
+      await api.patch(`/api/professionals/${id}/photo`, { photo: base64 });
+      setProfessionals(prev => prev.map(p => p.id === id ? {...p, photo: base64} : p));
+      setSuccess('Foto atualizada com sucesso');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch(e) {
+      setError(e.response?.data?.error || 'Erro ao salvar foto');
+    } finally { setPhotoLoading(null); }
+  };
+
   const handleCreate = async () => {
     setError('');
     if (!form.name || !form.username || !form.password) { setError('Preencha todos os campos'); return; }
     if (form.password.length < 6) { setError('Senha deve ter pelo menos 6 caracteres'); return; }
     setSaving(true);
     try {
-      const res = await api.post('/api/professionals', form);
+      const res = await api.post('/api/professionals', {
+        name: form.name,
+        username: form.username,
+        password: form.password,
+        role: form.role,
+        avatarColor: form.avatarColor
+      });
+      if (form.photo && res.data.id) {
+        await api.patch(`/api/professionals/${res.data.id}/photo`, { photo: form.photo }).catch(() => {});
+        res.data.photo = form.photo;
+      }
       setProfessionals(prev => [...prev, res.data]);
       setShowForm(false);
-      setForm({ name: '', username: '', password: '', role: 'PROFESSIONAL', avatarColor: '#F48FB1' });
-      setSuccess('Profissional adicionada com sucesso! 🎉');
+      setForm(emptyForm);
+      setSuccess('Profissional adicionada com sucesso!');
       setTimeout(() => setSuccess(''), 3000);
     } catch(e) { setError(e.response?.data?.error || 'Erro ao criar'); }
     finally { setSaving(false); }
   };
 
   const isSelf = (id) => user?.id === id;
-
   const active = professionals.filter(p => p.active);
   const inactive = professionals.filter(p => !p.active);
 
@@ -121,37 +129,20 @@ export default function AdminTeam() {
           {!p.active ? 'Desativada' : p.role === 'ADMIN' ? '👑 Admin' : '💅 Profissional'}
         </span>
       </div>
-
-      {!isSelf(p.id) && (
+      {!isSelf(p.id) ? (
         <div className="team-card-actions">
-          {/* Ativar / Desativar */}
-          <button
-            className={p.active ? 'deactivate-btn' : 'activate-btn'}
-            onClick={() => toggleActive(p.id, p.active)}>
+          <button className={p.active ? 'deactivate-btn' : 'activate-btn'} onClick={() => toggleActive(p.id, p.active)}>
             {p.active ? 'Desativar' : 'Reativar'}
           </button>
-
-          {/* Promover / Rebaixar */}
-          <button
-            className={p.role === 'ADMIN' ? 'demote-btn' : 'promote-btn'}
-            onClick={() => handleRole(p.id, p.role, p.name)}
-            disabled={promoting === p.id}
-            title={p.role === 'ADMIN' ? 'Rebaixar para Profissional' : 'Promover para Admin'}>
-            {promoting === p.id ? '...' : p.role === 'ADMIN' ? '👑 Rebaixar' : '⬆ Admin'}
+          <button className={p.role === 'ADMIN' ? 'demote-btn' : 'promote-btn'}
+            onClick={() => handleRole(p.id, p.role, p.name)} disabled={promoting === p.id}>
+            {promoting === p.id ? '...' : p.role === 'ADMIN' ? '↓ Rebaixar' : '↑ Admin'}
           </button>
-
-          {/* Excluir */}
-          <button
-            className="delete-btn"
-            onClick={() => handleDelete(p.id, p.name)}
-            disabled={deleting === p.id}
-            title="Excluir permanentemente">
+          <button className="delete-btn" onClick={() => handleDelete(p.id, p.name)} disabled={deleting === p.id}>
             {deleting === p.id ? '...' : '🗑'}
           </button>
         </div>
-      )}
-
-      {isSelf(p.id) && (
+      ) : (
         <div className="team-card-actions">
           <span className="self-badge">Você</span>
         </div>
@@ -166,7 +157,7 @@ export default function AdminTeam() {
           <h1>Equipe</h1>
           <p>Gerencie sua equipe de profissionais</p>
         </div>
-        <button className="add-btn" onClick={() => setShowForm(!showForm)}>
+        <button className="add-btn" onClick={() => { setShowForm(!showForm); setForm(emptyForm); }}>
           {showForm ? '✕ Cancelar' : '+ Adicionar profissional'}
         </button>
       </div>
@@ -201,6 +192,14 @@ export default function AdminTeam() {
               </select>
             </div>
             <div className="add-field full">
+              <label>Foto de perfil <span style={{fontWeight:400, color:'var(--text-light)', fontSize:12}}>(opcional)</span></label>
+              <div style={{display:'flex', alignItems:'center', gap:14}}>
+                <PhotoUpload currentPhoto={form.photo} name={form.name || '?'} size={56}
+                  onUpload={(b64) => setForm({...form, photo: b64})} />
+                <span style={{fontSize:13, color:'var(--text-light)'}}>Clique para adicionar uma foto</span>
+              </div>
+            </div>
+            <div className="add-field full">
               <label>Cor do avatar</label>
               <div className="color-grid">
                 {COLORS.map(c => (
@@ -227,7 +226,6 @@ export default function AdminTeam() {
           <div className="team-grid">
             {active.map(p => <ProfCard key={p.id} p={p} />)}
           </div>
-
           {inactive.length > 0 && (
             <>
               <h2 className="team-section-title inactive-title">Inativas ({inactive.length})</h2>
