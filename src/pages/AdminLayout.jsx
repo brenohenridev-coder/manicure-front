@@ -11,6 +11,18 @@ const NAV = [
 
 export default function AdminLayout() {
   const { user, logout, isAdmin } = useAuth();
+  const [profilePhoto, setProfilePhoto] = useState(null);
+
+  useEffect(() => {
+    if (user?.id) {
+      import('../services/api').then(({ default: api }) => {
+        api.get('/api/professionals/all').then(res => {
+          const me = res.data.find(p => p.id === user.id);
+          if (me?.photo) setProfilePhoto(me.photo);
+        }).catch(() => {});
+      });
+    }
+  }, [user?.id]);
   const navigate = useNavigate();
 
   const handleLogout = () => { logout(); navigate('/admin/login'); };
@@ -42,8 +54,11 @@ export default function AdminLayout() {
         </nav>
 
         <div className="sidebar-user">
-          <div className="user-avatar" style={{ background: user?.avatarColor || '#F48FB1' }}>
-            {user?.name?.charAt(0) || '?'}
+          <div className="user-avatar" style={{ background: profilePhoto ? 'transparent' : (user?.avatarColor || '#F48FB1'), overflow: 'hidden' }}>
+            {profilePhoto
+              ? <img src={profilePhoto} alt="Perfil" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}} />
+              : (user?.name?.charAt(0) || '?')
+            }
           </div>
           <div className="user-info">
             <span className="user-name">{user?.name}</span>
