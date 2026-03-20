@@ -13,10 +13,15 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
+    // Só redireciona para login se for uma rota autenticada do admin (não login)
     if (err.response?.status === 401) {
-      localStorage.removeItem('manicure_token');
-      localStorage.removeItem('manicure_user');
-      window.location.href = '/admin/login';
+      const url = err.config?.url || '';
+      const isLoginRoute = url.includes('/auth/login') || url.includes('/client-auth/login') || url.includes('/client-auth/register');
+      if (!isLoginRoute) {
+        localStorage.removeItem('manicure_token');
+        localStorage.removeItem('manicure_user');
+        window.location.href = '/admin/login';
+      }
     }
     return Promise.reject(err);
   }
